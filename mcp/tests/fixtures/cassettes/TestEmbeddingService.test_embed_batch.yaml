@@ -1,0 +1,88 @@
+interactions:
+- request:
+    body: '{"input": ["User prefers TypeScript over JavaScript", "Always run tests
+      before committing", "Error handling is important"], "model": "text-embedding-3-small",
+      "dimensions": 1536, "encoding_format": "base64"}'
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '198'
+      Content-Type:
+      - application/json
+      Host:
+      - api.openai.com
+      User-Agent:
+      - AsyncOpenAI/Python 2.9.0
+      X-Stainless-Arch:
+      - arm64
+      X-Stainless-Async:
+      - async:asyncio
+      X-Stainless-Lang:
+      - python
+      X-Stainless-OS:
+      - MacOS
+      X-Stainless-Package-Version:
+      - 2.9.0
+      X-Stainless-Runtime:
+      - CPython
+      X-Stainless-Runtime-Version:
+      - 3.12.12
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: "{\n    \"error\": {\n        \"message\": \"You didn't provide an API
+        key. You need to provide your API key in an Authorization header using Bearer
+        auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with
+        blank username) if you're accessing the API from your browser and are prompted
+        for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\",\n
+        \       \"type\": \"invalid_request_error\",\n        \"param\": null,\n        \"code\":
+        null\n    }\n}\n"
+    headers:
+      CF-RAY:
+      - 9ab4c261387da290-YUL
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '496'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 09 Dec 2025 13:13:20 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cf_bm=XSjpqpGHrvh4vqZxDxqPWXr1rXoAp2YpvTLxmrRiLbg-1765286000-1.0.1.1-f5Yg1htKVYe1DvCHcmnoDRtF.FlB7BCPzeLbDTnNzap0_XSK9rfQ4BgT4nQX9.jWsKKtEB_yyGALB7.QIDhwheqoxRSYzK51g1e3Qzn6jpY;
+        path=/; expires=Tue, 09-Dec-25 13:43:20 GMT; domain=.api.openai.com; HttpOnly;
+        Secure; SameSite=None
+      - _cfuvid=0NdZEcMbB1_zLrH_yW._2pkgrdxlTxsTGQiqQwAV6Hg-1765286000927-0.0.1.1-604800000;
+        path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      X-Content-Type-Options:
+      - nosniff
+      alt-svc:
+      - h3=":443"; ma=86400
+      cf-cache-status:
+      - DYNAMIC
+      vary:
+      - Origin
+      x-envoy-upstream-service-time:
+      - '0'
+      x-openai-proxy-wasm:
+      - v0.1
+      x-request-id:
+      - req_f699ad7b3a5849a8a7fd975e2afc140d
+    status:
+      code: 401
+      message: Unauthorized
+version: 1

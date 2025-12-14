@@ -1,0 +1,44 @@
+{
+  "name": "engram",
+  "description": "Portable memory graph for Claude Code interactions. Provides semantic search, observation ingestion, and episodic-to-semantic reflection via RAG-backed memory system.",
+  "version": "0.2.0",
+  "author": {
+    "name": "Christopher Rock"
+  },
+  "components": {
+    "agents": [
+      {
+        "name": "memory-manager",
+        "path": "agents/memory-manager.md",
+        "description": "Orchestrates all memory operations including retrieval, ingestion, reflection, and curation. Use when working with Claude Code memories."
+      }
+    ],
+    "skills": [
+      {
+        "name": "memory-retrieval",
+        "path": "skills/memory-retrieval/SKILL.md",
+        "description": "Query formulation and context assembly patterns for effective memory retrieval."
+      },
+      {
+        "name": "memory-reflection",
+        "path": "skills/memory-reflection/SKILL.md",
+        "description": "Procedures for synthesizing episodic memories into semantic insights."
+      },
+      {
+        "name": "memory-curation",
+        "path": "skills/memory-curation/SKILL.md",
+        "description": "Memory quality management through feedback, deduplication, and importance calibration."
+      }
+    ],
+    "hooks": {
+      "path": "hooks/hooks.json"
+    }
+  },
+  "requirements": {
+    "mcp": {
+      "server": "engram",
+      "command": "uv run --directory ${CLAUDE_PLUGIN_ROOT}/../../mcp python server.py",
+      "description": "FastMCP server providing RAG-backed memory storage, retrieval, and reflection"
+    }
+  }
+}

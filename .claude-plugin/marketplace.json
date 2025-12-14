@@ -1,0 +1,16 @@
+{
+  "name": "engram",
+  "owner": {
+    "name": "Christopher Rock"
+  },
+  "metadata": {
+    "description": "Portable memory graph for Claude Code interactions. Provides semantic search, observation ingestion, and episodic-to-semantic reflection via RAG-backed memory system.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "engram",
+      "source": "./plugins/engram"
+    }
+  ]
+}

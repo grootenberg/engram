@@ -1,0 +1,87 @@
+interactions:
+- request:
+    body: '{"input": ["First text", "Second text", "Third text"], "model": "text-embedding-3-small",
+      "dimensions": 1536, "encoding_format": "base64"}'
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '129'
+      Content-Type:
+      - application/json
+      Host:
+      - api.openai.com
+      User-Agent:
+      - AsyncOpenAI/Python 2.9.0
+      X-Stainless-Arch:
+      - arm64
+      X-Stainless-Async:
+      - async:asyncio
+      X-Stainless-Lang:
+      - python
+      X-Stainless-OS:
+      - MacOS
+      X-Stainless-Package-Version:
+      - 2.9.0
+      X-Stainless-Runtime:
+      - CPython
+      X-Stainless-Runtime-Version:
+      - 3.12.12
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: "{\n    \"error\": {\n        \"message\": \"You didn't provide an API
+        key. You need to provide your API key in an Authorization header using Bearer
+        auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with
+        blank username) if you're accessing the API from your browser and are prompted
+        for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\",\n
+        \       \"type\": \"invalid_request_error\",\n        \"param\": null,\n        \"code\":
+        null\n    }\n}\n"
+    headers:
+      CF-RAY:
+      - 9ab4c2627a18a30a-YUL
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '496'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 09 Dec 2025 13:13:21 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cf_bm=3_Kc1tf.PAwPqQS8cygMvHc9IqgVpDd0CnPtN_sbhik-1765286001-1.0.1.1-LDA0jTpGSG62OasgnOVekYmkQdOUzQIuLzQTiFlq43nHsQxjWPRUyJ27_JeMvxEBeKDnIXnLYlOzBavQuDZd5jl3kLsr2ev2g_.ZY6sU2vA;
+        path=/; expires=Tue, 09-Dec-25 13:43:21 GMT; domain=.api.openai.com; HttpOnly;
+        Secure; SameSite=None
+      - _cfuvid=REe30vY78HC8Jlfaaw4XPJCw0axBx3WKt.RptJacs90-1765286001128-0.0.1.1-604800000;
+        path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      X-Content-Type-Options:
+      - nosniff
+      alt-svc:
+      - h3=":443"; ma=86400
+      cf-cache-status:
+      - DYNAMIC
+      vary:
+      - Origin
+      x-envoy-upstream-service-time:
+      - '0'
+      x-openai-proxy-wasm:
+      - v0.1
+      x-request-id:
+      - req_b504ebb4e1c346849dd014fed4570a94
+    status:
+      code: 401
+      message: Unauthorized
+version: 1

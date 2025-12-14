@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Analyze this file modification for memory capture. If it represents a significant change worth remembering (architectural decision, bug fix, new pattern, important configuration), output JSON:\n{\"capture\": true, \"observation\": \"<clear description of what changed and why it matters>\", \"type\": \"code_change\", \"importance\": <5-9>, \"section\": \"<strategies|snippets|pitfalls|context|null>\"}\n\nIf the change is routine/trivial (formatting, typos, minor tweaks), output:\n{\"capture\": false}\n\nBe selective - only capture changes that would be valuable to recall in future sessions.",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Analyze this command execution for memory capture.\n\nCapture if:\n- Error occurred (importance 8-9, type \"error\")\n- Test results with failures (importance 7, type \"test_result\")\n- Significant build/deploy output (importance 6, type \"tool_output\")\n- Important command pattern worth remembering (importance 5-6, type \"general\")\n\nOutput JSON:\n{\"capture\": true, \"observation\": \"<description>\", \"type\": \"<error|test_result|tool_output|general>\", \"importance\": <3-9>}\n\nFor routine commands (ls, cd, simple git operations), output:\n{\"capture\": false}",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "The session is ending. Review the conversation for any valuable observations that should be preserved:\n\n1. User instructions or preferences stated\n2. Decisions made about architecture or implementation\n3. Lessons learned from errors or debugging\n4. Patterns or approaches that worked well\n\nFor each worth capturing, output JSON array:\n[{\"observation\": \"<description>\", \"type\": \"<instruction|decision|insight|error>\", \"importance\": <6-10>, \"section\": \"<strategies|snippets|pitfalls|context|preferences|null>\"}]\n\nIf nothing significant to capture, output: []",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

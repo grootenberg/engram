@@ -1,0 +1,17 @@
+services:
+  postgres-test:
+    image: pgvector/pgvector:pg16
+    container_name: engram-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: engram_test
+    ports:
+      - "5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d engram_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
