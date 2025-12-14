@@ -3,6 +3,7 @@
 from app.services.embedding import EmbeddingService, embedding_service
 from app.services.ingestion import IngestionService, ingestion_service
 from app.services.reflection import ReflectionService, reflection_service
+from app.services.reflection_jobs import ReflectionJobService, reflection_job_service
 from app.services.retrieval import RetrievalService, retrieval_service
 
 __all__ = [
@@ -14,4 +15,6 @@ __all__ = [
     "retrieval_service",
     "ReflectionService",
     "reflection_service",
+    "ReflectionJobService",
+    "reflection_job_service",
 ]

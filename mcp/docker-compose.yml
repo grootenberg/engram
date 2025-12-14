@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: engram
     ports:
-      - "5432:5432"
+      - "5442:5432"
     volumes:
       - engram_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,6 +15,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  engram:
+    build: .
+    container_name: engram-server
+    ports:
+      - "8787:8787"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/engram
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ENGRAM_HOST: "0.0.0.0"
+      ENGRAM_PORT: "8787"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   engram_data:

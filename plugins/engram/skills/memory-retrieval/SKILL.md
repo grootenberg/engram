@@ -30,7 +30,7 @@ For complex retrievals, break into sub-queries:
 
 ### Three-Factor Scoring
 
-Adjust weights based on retrieval intent:
+Recency uses `last_accessed_at` (not creation time) and all three factors are min-max normalized across the candidate set. Adjust weights based on retrieval intent:
 
 | Intent          | Recency | Importance | Relevance |
 | --------------- | ------- | ---------- | --------- |

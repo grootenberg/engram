@@ -71,16 +71,22 @@ Create `mcp/.env` with:
 ## Key Concepts
 
 **Three-Factor Scoring**: Retrieval ranks by `α*recency + β*importance + γ*relevance`
-- Recency: `0.995^hours_since_access` (~14 day half-life)
+- Recency: `0.995^hours_since_access` (~14 day half-life, uses `last_accessed_at`)
 - Importance: `(base + (helpful - harmful) * 0.5) / 10`
 - Relevance: Cosine similarity to query embedding
+- All three factors are min-max normalized across the candidate set before weighting
 
 **Memory Types**:
 - Episodic: Raw observations (is_synthetic=false)
 - Semantic: Synthesized insights from reflection (is_synthetic=true)
+- Procedural: Workflow-style memories generated when reflection surfaces repeatable steps
 
 **Observation Types**: error (9), instruction (10), decision (8), code_change (7), insight (7), test_result (6), general (5), tool_output (3) - numbers are default importance scores
 
-**Deduplication**: Observations with >90% cosine similarity are deduplicated (helpful_count incremented)
+**Deduplication**: Observations with >90% cosine similarity are deduplicated (helpful_count incremented, `last_accessed_at` refreshed)
+
+**Forgetting/Compaction**: Episodic memories below an importance threshold are pruned after a TTL (defaults: 90 days, importance <4, batch limit 500). Configure via `ENGRAM_COMPACTION_*` settings or disable by setting TTL to 0.
+
+**Reflection**: Two-stage reflection runs in the background (enqueue via `reflect`, poll via `reflect_status`), generates guiding questions, retrieves targeted episodic memories per question, and emits semantic insights and optional procedural workflows with citations.
 
 **Reflection Triggers**: importance_sum >= 150 OR obs_count >= 100 OR hours >= 24

@@ -17,7 +17,7 @@ async def memory_observe(
     """Ingest an observation into the memory stream.
 
     Observations are append-only with automatic deduplication.
-    Duplicate observations (>90% cosine similarity) are rejected.
+    Duplicate observations (>90% cosine similarity) reinforce the existing memory (helpful_count++) rather than inserting a new row.
 
     Args:
         content: The observation content to store.
@@ -33,7 +33,7 @@ async def memory_observe(
 
     Returns:
         dict with status ("created" or "deduplicated"), memory_id if created,
-        and importance_score assigned.
+        importance_score assigned, and maintenance metadata (e.g., compacted count).
 
     Example:
         >>> memory_observe(

@@ -57,9 +57,9 @@ Parameters:
 - `helpful` (required): true/false
 - `reason`: Optional explanation
 
-### `reflect` - Synthesize insights
+### `reflect` / `reflect_status` - Background synthesis
 
-Convert episodic memories into semantic knowledge.
+Two-stage reflection is queued: enqueue with `reflect`, poll with `reflect_status`. Generates guiding questions, retrieves relevant episodic memories per question, and synthesizes semantic insights plus procedural workflows.
 
 Parameters:
 

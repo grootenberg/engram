@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.models.memory import Memory, MemoryType
+from app.models.reflection_job import ReflectionJob, ReflectionJobStatus
 from app.models.reflection_state import ReflectionState
 
 
@@ -164,7 +165,7 @@ async def _get_detailed_stats(session: AsyncSession, user_id: UUID) -> dict:
 
 
 async def _get_reflection_stats(session: AsyncSession, user_id: UUID) -> dict:
-    """Get reflection trigger state and history."""
+    """Get reflection trigger state, history, and job queue status."""
     # Get reflection state
     result = await session.execute(
         select(ReflectionState).where(ReflectionState.user_id == user_id)
@@ -191,9 +192,54 @@ async def _get_reflection_stats(session: AsyncSession, user_id: UUID) -> dict:
     )
     semantic_count = semantic_result.scalar() or 0
 
+    # Job queue stats
+    queued_result = await session.execute(
+        select(func.count())
+        .select_from(ReflectionJob)
+        .where(
+            ReflectionJob.user_id == user_id,
+            ReflectionJob.status == ReflectionJobStatus.QUEUED,
+        )
+    )
+    queued_jobs = queued_result.scalar() or 0
+
+    running_result = await session.execute(
+        select(func.count())
+        .select_from(ReflectionJob)
+        .where(
+            ReflectionJob.user_id == user_id,
+            ReflectionJob.status == ReflectionJobStatus.RUNNING,
+        )
+    )
+    running_jobs = running_result.scalar() or 0
+
+    last_job_result = await session.execute(
+        select(ReflectionJob)
+        .where(
+            ReflectionJob.user_id == user_id,
+            ReflectionJob.status == ReflectionJobStatus.COMPLETED,
+        )
+        .order_by(ReflectionJob.completed_at.desc())
+        .limit(1)
+    )
+    last_job = last_job_result.scalar_one_or_none()
+
     return {
         "reflection_state": state.to_dict(),
         "should_reflect": should_reflect,
         "trigger_reason": reason,
         "total_synthetic_insights": semantic_count,
+        "jobs": {
+            "queued": queued_jobs,
+            "running": running_jobs,
+            "last_completed": {
+                "job_id": str(last_job.id),
+                "completed_at": last_job.completed_at.isoformat() if last_job else None,
+                "insights_created": last_job.insights_created if last_job else None,
+                "procedures_created": last_job.procedures_created if last_job else None,
+                "memories_analyzed": last_job.memories_analyzed if last_job else None,
+            }
+            if last_job
+            else None,
+        },
     }

@@ -24,6 +24,14 @@ Use `force=True` when:
 - Session is ending and valuable context exists
 - A major milestone or decision was reached
 
+## Reflection Flow
+
+1. Enqueue reflection via `reflect` (non-blocking). Poll completion via `reflect_status` or check `stats(scope="reflection")`.
+2. Generate up to 3 high-level reflection questions from recent episodic memories (optionally biased by `focus`).
+3. For each question, retrieve the most relevant episodic memories by semantic similarity.
+4. Extract semantic insights **and** procedural workflows (short title + 3-7 steps) with citations to source memory IDs.
+5. Respect `max_insights` across both insights and procedures.
+
 ## Focus Strategies
 
 ### Focused Reflection

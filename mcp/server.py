@@ -1,19 +1,29 @@
 """FastMCP server for engram - a portable memory graph for Claude Code interactions."""
 
 from fastmcp import FastMCP
+from fastmcp.server.auth.providers.github import GitHubProvider
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse
 
+from app.config import settings
 from app.tools import (
     memory_feedback,
     memory_observe,
     memory_reflect,
+    memory_reflect_status,
     memory_retrieve,
     memory_stats,
 )
 
-# Initialize FastMCP server
-mcp = FastMCP("engram")
+# Configure GitHub OAuth
+auth = GitHubProvider(
+    client_id=settings.github_client_id,
+    client_secret=settings.github_client_secret,
+    base_url=f"http://localhost:{settings.engram_port}",
+)
+
+# Initialize FastMCP server with auth
+mcp = FastMCP("engram", auth=auth)
 
 
 # Health check endpoint
@@ -165,6 +175,15 @@ async def reflect(
 
 
 @mcp.tool()
+async def reflect_status(
+    job_id: str,
+    user_id: str = "default",
+) -> dict:
+    """Get the status of a background reflection job."""
+    return await memory_reflect_status(job_id=job_id, user_id=user_id)
+
+
+@mcp.tool()
 async def stats(
     user_id: str = "default",
     scope: str = "summary",
@@ -184,5 +203,13 @@ async def stats(
     )
 
 
+# ASGI app for uvicorn (used by start_dev_server.sh)
+app = mcp.http_app()
+
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(
+        transport="http",
+        host=settings.engram_host,
+        port=settings.engram_port,
+        stateless_http=True,
+    )

@@ -17,9 +17,10 @@ class RetrievalService:
         score = α * recency + β * importance + γ * relevance
 
     Where:
-        - recency: Exponential decay based on hours since creation
+        - recency: Exponential decay based on hours since last access
         - importance: Effective importance (base + feedback adjustment)
         - relevance: Cosine similarity to query embedding
+        - Each factor is min-max normalized across the candidate set
     """
 
     async def retrieve(
@@ -72,13 +73,13 @@ class RetrievalService:
         synthetic_filter = "" if include_synthetic else "AND is_synthetic = FALSE"
 
         # Three-factor scoring query
-        # recency = decay ^ hours_since (normalized to 0-1)
-        # importance = effective_importance / 10 (normalized to 0-1)
-        # relevance = cosine_similarity (already 0-1 for normalized vectors)
+        # recency = decay ^ hours_since last access (normalized)
+        # importance = effective_importance / 10 (normalized then min-maxed)
+        # relevance = cosine_similarity (min-maxed)
         decay = settings.engram_recency_decay
 
         query_sql = text(rf"""
-            WITH scored_memories AS (
+            WITH base AS (
                 SELECT
                     id,
                     content,
@@ -93,12 +94,12 @@ class RetrievalService:
                     created_at,
                     last_accessed_at,
                     extra_metadata,
-                    -- Recency score: exponential decay
-                    POWER(:decay, EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600) as recency_score,
-                    -- Effective importance normalized to 0-1
+                    -- Recency score: exponential decay using last access time
+                    POWER(:decay, EXTRACT(EPOCH FROM (NOW() - COALESCE(last_accessed_at, created_at))) / 3600) as recency_raw,
+                    -- Effective importance normalized to 0-1 before min-max
                     LEAST(1.0, GREATEST(0.0,
                         (importance_score + (helpful_count - harmful_count) * 0.5) / 10.0
-                    )) as importance_score_normalized,
+                    )) as importance_raw,
                     -- Relevance score: cosine similarity
                     1 - (embedding <=> :query_embedding\:\:vector) as relevance_score
                 FROM memories
@@ -107,15 +108,46 @@ class RetrievalService:
                   AND importance_score >= :min_importance
                   {type_filter}
                   {synthetic_filter}
+            ),
+            stats AS (
+                SELECT
+                    MIN(recency_raw) AS recency_min,
+                    MAX(recency_raw) AS recency_max,
+                    MIN(importance_raw) AS importance_min,
+                    MAX(importance_raw) AS importance_max,
+                    MIN(relevance_score) AS relevance_min,
+                    MAX(relevance_score) AS relevance_max
+                FROM base
+            ),
+            normalized AS (
+                SELECT
+                    base.*,
+                    CASE
+                        WHEN stats.recency_max > stats.recency_min
+                            THEN (base.recency_raw - stats.recency_min) / NULLIF(stats.recency_max - stats.recency_min, 0)
+                        ELSE base.recency_raw
+                    END AS recency_score,
+                    CASE
+                        WHEN stats.importance_max > stats.importance_min
+                            THEN (base.importance_raw - stats.importance_min) / NULLIF(stats.importance_max - stats.importance_min, 0)
+                        ELSE base.importance_raw
+                    END AS importance_score_normalized,
+                    CASE
+                        WHEN stats.relevance_max > stats.relevance_min
+                            THEN (base.relevance_score - stats.relevance_min) / NULLIF(stats.relevance_max - stats.relevance_min, 0)
+                        ELSE base.relevance_score
+                    END AS relevance_score_normalized
+                FROM base
+                CROSS JOIN stats
             )
             SELECT
                 *,
                 (
                     :recency_weight * recency_score +
                     :importance_weight * importance_score_normalized +
-                    :relevance_weight * relevance_score
+                    :relevance_weight * relevance_score_normalized
                 ) as combined_score
-            FROM scored_memories
+            FROM normalized
             WHERE relevance_score > 0.1  -- Minimum relevance threshold
             ORDER BY combined_score DESC
             LIMIT :limit
@@ -167,8 +199,11 @@ class RetrievalService:
                 "scores": {
                     "combined": round(row.combined_score, 4),
                     "recency": round(row.recency_score, 4),
+                    "recency_raw": round(row.recency_raw, 4),
                     "importance": round(row.importance_score_normalized, 4),
-                    "relevance": round(row.relevance_score, 4),
+                    "importance_raw": round(row.importance_raw, 4),
+                    "relevance": round(row.relevance_score_normalized, 4),
+                    "relevance_raw": round(row.relevance_score, 4),
                 },
             })
 

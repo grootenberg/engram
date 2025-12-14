@@ -43,7 +43,7 @@ Clamped to [1, 10] range. Heavy negative feedback can suppress memories without 
 
 ### Built-in Deduplication
 
-Observations with >90% cosine similarity to recent memories (7 days) are rejected.
+Observations with >90% cosine similarity to recent memories (7 days) are rejected; the existing memory's helpful_count is incremented and its recency refreshed.
 
 ### Manual Deduplication
 
@@ -94,6 +94,12 @@ If memories are consistently:
 - Missing from retrieval: Verify they exist, check query formulation
 
 ## Maintenance Operations
+
+### Forgetting/Compaction
+
+- Low-importance episodic memories (effective importance < 4 by default) older than the TTL (90 days by default) are pruned in small batches.
+- Configure via `ENGRAM_COMPACTION_TTL_DAYS`, `ENGRAM_COMPACTION_IMPORTANCE_THRESHOLD`, and `ENGRAM_COMPACTION_BATCH_LIMIT`.
+- Set TTL to 0 to disable pruning entirely.
 
 ### Health Monitoring
 

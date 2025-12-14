@@ -59,7 +59,7 @@ Create `mcp/.env` with your API keys:
 ```env
 OPENAI_API_KEY=sk-...          # Required for embeddings
 ANTHROPIC_API_KEY=sk-ant-...   # Required for reflection
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/engram
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5442/engram
 ```
 
 ### 5. Install the Plugin
@@ -73,7 +73,8 @@ Add this repository to your Claude Code plugins. The plugin will automatically s
 | `observe` | Ingest observations with automatic deduplication |
 | `retrieve` | Search memories with three-factor scoring |
 | `feedback` | Provide helpful/harmful signals on memories |
-| `reflect` | Synthesize episodic memories into semantic insights |
+| `reflect` | Enqueue two-stage reflection (background) that synthesizes semantic insights and procedural workflows |
+| `reflect_status` | Poll the status/result of a queued reflection job |
 | `stats` | Get memory system statistics and health metrics |
 
 ## Memory Types

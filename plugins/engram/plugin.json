@@ -37,7 +37,7 @@
   "requirements": {
     "mcp": {
       "server": "engram",
-      "command": "uv run --directory ${CLAUDE_PLUGIN_ROOT}/../../mcp python server.py",
+      "url": "http://localhost:8787/mcp",
       "description": "FastMCP server providing RAG-backed memory storage, retrieval, and reflection"
     }
   }

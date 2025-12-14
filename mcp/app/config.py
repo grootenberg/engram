@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     )
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:birdseye@localhost:5432/engram"
+    database_url: str = "postgresql+asyncpg://postgres:birdseye@localhost:5442/engram"
 
     # Embedding
     openai_api_key: str = ""
@@ -31,9 +31,25 @@ class Settings(BaseSettings):
     engram_importance_threshold: float = 150.0
     engram_observation_threshold: int = 100
     engram_time_threshold_hours: int = 24
+    engram_default_reflection_insights: int = 5
+    engram_reflection_poll_interval_seconds: float = 5.0
 
     # Deduplication
     engram_similarity_threshold: float = 0.90
+
+    # Forgetting / compaction
+    engram_compaction_ttl_days: int = 90
+    engram_compaction_importance_threshold: float = 4.0
+    engram_compaction_batch_limit: int = 500
+
+    # Server
+    engram_host: str = "0.0.0.0"
+    engram_port: int = 8787
+    engram_debug: bool = False
+
+    # GitHub OAuth
+    github_client_id: str = ""
+    github_client_secret: str = ""
 
     # Importance heuristics
     importance_error: float = 9.0
