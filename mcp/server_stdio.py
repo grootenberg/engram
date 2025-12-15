@@ -1,43 +1,17 @@
-"""FastMCP server for engram - a portable memory graph for Claude Code interactions."""
-
-import logging
+"""Stdio entrypoint for engram MCP server (for use with reloaderoo proxy)."""
 
 from fastmcp import FastMCP
-from fastmcp.server.auth.providers.github import GitHubProvider
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse
-
-from app.config import settings
-
-# Suppress noisy MCP streamable_http ClosedResourceError logs (known issue with stateless mode)
-# See: https://github.com/modelcontextprotocol/python-sdk/issues/1658
-logging.getLogger("mcp.server.streamable_http").setLevel(logging.CRITICAL)
 from app.tools import (
     memory_feedback,
     memory_observe,
     memory_reflect,
     memory_reflect_status,
     memory_retrieve,
-    memory_retrieve_debug,
     memory_stats,
 )
 
-# Configure GitHub OAuth
-auth = GitHubProvider(
-    client_id=settings.github_client_id,
-    client_secret=settings.github_client_secret,
-    base_url=f"http://localhost:{settings.engram_port}",
-)
-
-# Initialize FastMCP server with auth (stateless for HMR compatibility)
-mcp = FastMCP("engram", auth=auth, stateless_http=True, json_response=True)
-
-
-# Health check endpoint
-@mcp.custom_route("/health", methods=["GET"])
-async def health_check(request: Request) -> PlainTextResponse:
-    """Health check endpoint for container orchestration."""
-    return PlainTextResponse("OK")
+# Initialize FastMCP server without auth (stdio doesn't need OAuth)
+mcp = FastMCP("engram")
 
 
 # Register MCP tools
@@ -92,12 +66,6 @@ async def retrieve(
     recency_weight: float = 0.33,
     importance_weight: float = 0.33,
     relevance_weight: float = 0.33,
-    observation_types: list[str] | None = None,
-    sections: list[str] | None = None,
-    created_after: str | None = None,
-    created_before: str | None = None,
-    min_helpful_count: int = 0,
-    max_harmful_count: int | None = None,
 ) -> dict:
     """Retrieve memories using three-factor scoring.
 
@@ -114,14 +82,6 @@ async def retrieve(
         recency_weight: Weight for recency factor α (default: 0.33).
         importance_weight: Weight for importance factor β (default: 0.33).
         relevance_weight: Weight for relevance factor γ (default: 0.33).
-        observation_types: Filter by observation types.
-            Options: error, instruction, decision, code_change, insight, test_result, general, tool_output.
-        sections: Filter by ACE sections.
-            Options: strategies, snippets, pitfalls, context, preferences.
-        created_after: Only include memories created after this ISO datetime.
-        created_before: Only include memories created before this ISO datetime.
-        min_helpful_count: Minimum helpful feedback count (default: 0).
-        max_harmful_count: Maximum harmful feedback count. If None, no limit.
 
     Returns:
         dict with memories list, count, and weights used.
@@ -136,77 +96,6 @@ async def retrieve(
         recency_weight=recency_weight,
         importance_weight=importance_weight,
         relevance_weight=relevance_weight,
-        observation_types=observation_types,
-        sections=sections,
-        created_after=created_after,
-        created_before=created_before,
-        min_helpful_count=min_helpful_count,
-        max_harmful_count=max_harmful_count,
-    )
-
-
-@mcp.tool()
-async def retrieve_debug(
-    query: str,
-    user_id: str = "default",
-    limit: int = 10,
-    memory_types: list[str] | None = None,
-    min_importance: float = 0.0,
-    include_synthetic: bool = True,
-    recency_weight: float = 0.33,
-    importance_weight: float = 0.33,
-    relevance_weight: float = 0.33,
-    observation_types: list[str] | None = None,
-    sections: list[str] | None = None,
-    created_after: str | None = None,
-    created_before: str | None = None,
-    min_helpful_count: int = 0,
-    max_harmful_count: int | None = None,
-) -> dict:
-    """Debug retrieval scoring for a query.
-
-    Returns detailed breakdown of how each memory was scored,
-    including raw scores before normalization and filter effects.
-    Useful for understanding why certain memories are or aren't retrieved.
-
-    Args:
-        query: Search query text for semantic matching.
-        user_id: User identifier (default: "default").
-        limit: Maximum number of results (default: 10).
-        memory_types: Filter by memory types. Options: episodic, semantic, procedural.
-        min_importance: Minimum importance score filter (default: 0.0).
-        include_synthetic: Include reflected/synthesized memories (default: True).
-        recency_weight: Weight for recency factor α (default: 0.33).
-        importance_weight: Weight for importance factor β (default: 0.33).
-        relevance_weight: Weight for relevance factor γ (default: 0.33).
-        observation_types: Filter by observation types.
-        sections: Filter by ACE sections.
-        created_after: Only include memories created after this ISO datetime.
-        created_before: Only include memories created before this ISO datetime.
-        min_helpful_count: Minimum helpful feedback count (default: 0).
-        max_harmful_count: Maximum harmful feedback count. If None, no limit.
-
-    Returns:
-        dict with query, embedding preview, candidate counts, weights,
-        score_ranges, detailed results with raw/normalized scores,
-        and examples of filtered-out memories with reasons.
-    """
-    return await memory_retrieve_debug(
-        query=query,
-        user_id=user_id,
-        limit=limit,
-        memory_types=memory_types,
-        min_importance=min_importance,
-        include_synthetic=include_synthetic,
-        recency_weight=recency_weight,
-        importance_weight=importance_weight,
-        relevance_weight=relevance_weight,
-        observation_types=observation_types,
-        sections=sections,
-        created_after=created_after,
-        created_before=created_before,
-        min_helpful_count=min_helpful_count,
-        max_harmful_count=max_harmful_count,
     )
 
 
@@ -295,13 +184,5 @@ async def stats(
     )
 
 
-# ASGI app for uvicorn (used by start_dev_server.sh)
-app = mcp.http_app()
-
 if __name__ == "__main__":
-    mcp.run(
-        transport="http",
-        host=settings.engram_host,
-        port=settings.engram_port,
-        stateless_http=True,
-    )
+    mcp.run()  # Default is stdio transport

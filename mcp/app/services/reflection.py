@@ -133,18 +133,19 @@ class ReflectionService:
             fallback = focus or "What are the most important learnings from recent work?"
             questions = [fallback]
 
-        created_insights: list[dict] = []
-        created_procedures: list[dict] = []
+        # Stage 2: per-question insight extraction - collect all outputs first
+        all_outputs: list[tuple[str, dict]] = []  # (question, outputs)
 
-        # Stage 2: per-question insight extraction
         for idx, question in enumerate(questions):
-            # Respect overall max_insights across insights + procedures
-            total_created = len(created_insights) + len(created_procedures)
-            if max_insights > 0 and total_created >= max_insights:
-                break
-
             if max_insights > 0:
-                remaining_slots = max(max_insights - total_created, 1)
+                total_collected = sum(
+                    len(o.get("insights", [])) + len(o.get("procedures", []))
+                    for _, o in all_outputs
+                )
+                if total_collected >= max_insights:
+                    break
+
+                remaining_slots = max(max_insights - total_collected, 1)
                 remaining_questions = len(questions) - idx
                 per_question_limit = remaining_slots
                 if remaining_questions > 1:
@@ -153,7 +154,6 @@ class ReflectionService:
                         (per_question_limit + remaining_questions - 1) // remaining_questions,
                     )
             else:
-                # If no explicit cap, keep per-call bounded to avoid runaway synthesis
                 per_question_limit = 5
 
             relevant_memories = await self._get_memories_for_question(
@@ -172,8 +172,18 @@ class ReflectionService:
                 max_insights=per_question_limit or max_insights,
             )
 
+            all_outputs.append((question, outputs))
+
+        # Collect all texts to embed in a single batch
+        texts_to_embed: list[str] = []
+        embed_metadata: list[tuple[str, int, dict]] = []  # (type, index_in_type, data)
+
+        pending_insights: list[dict] = []
+        pending_procedures: list[dict] = []
+
+        for question, outputs in all_outputs:
             for insight_data in outputs.get("insights", []):
-                if max_insights > 0 and (len(created_insights) + len(created_procedures)) >= max_insights:
+                if max_insights > 0 and (len(pending_insights) + len(pending_procedures)) >= max_insights:
                     break
 
                 insight_text = (insight_data.get("insight") or "").strip()
@@ -183,19 +193,9 @@ class ReflectionService:
                 importance = max(1.0, min(10.0, insight_data.get("importance", 7)))
                 citations = insight_data.get("citations", [])
 
-                embedding = await embedding_service.embed(insight_text)
-                memory = Memory(
-                    user_id=user_id,
-                    content=insight_text,
-                    embedding=embedding,
-                    memory_type=MemoryType.SEMANTIC,
-                    observation_type=ObservationType.INSIGHT,
-                    importance_score=importance,
-                    is_synthetic=True,
-                    citations=citations,
-                )
-                session.add(memory)
-                created_insights.append({
+                texts_to_embed.append(insight_text)
+                embed_metadata.append(("insight", len(pending_insights), insight_data))
+                pending_insights.append({
                     "content": insight_text,
                     "importance": importance,
                     "citations": citations,
@@ -203,7 +203,7 @@ class ReflectionService:
                 })
 
             for proc_data in outputs.get("procedures", []):
-                if max_insights > 0 and (len(created_insights) + len(created_procedures)) >= max_insights:
+                if max_insights > 0 and (len(pending_insights) + len(pending_procedures)) >= max_insights:
                     break
 
                 title = (proc_data.get("title") or "").strip()
@@ -215,24 +215,67 @@ class ReflectionService:
                 citations = proc_data.get("citations", [])
                 content = self._format_procedural_content(title, steps)
 
-                embedding = await embedding_service.embed(content)
-                memory = Memory(
-                    user_id=user_id,
-                    content=content,
-                    embedding=embedding,
-                    memory_type=MemoryType.PROCEDURAL,
-                    observation_type=ObservationType.INSIGHT,
-                    importance_score=importance,
-                    is_synthetic=True,
-                    citations=citations,
-                )
-                session.add(memory)
-                created_procedures.append({
+                texts_to_embed.append(content)
+                embed_metadata.append(("procedure", len(pending_procedures), proc_data))
+                pending_procedures.append({
                     "title": title,
                     "steps": steps,
                     "importance": importance,
                     "citations": citations,
                     "question": question,
+                    "_content": content,
+                })
+
+        # Batch embed all texts at once
+        embeddings = await embedding_service.embed_batch(texts_to_embed) if texts_to_embed else []
+
+        # Create Memory objects with pre-computed embeddings
+        created_insights: list[dict] = []
+        created_procedures: list[dict] = []
+
+        for idx, (embed_type, type_idx, _) in enumerate(embed_metadata):
+            embedding = embeddings[idx] if idx < len(embeddings) else None
+            if embedding is None:
+                continue
+
+            if embed_type == "insight":
+                data = pending_insights[type_idx]
+                memory = Memory(
+                    user_id=user_id,
+                    content=data["content"],
+                    embedding=embedding,
+                    memory_type=MemoryType.SEMANTIC,
+                    observation_type=ObservationType.INSIGHT,
+                    importance_score=data["importance"],
+                    is_synthetic=True,
+                    citations=data["citations"],
+                )
+                session.add(memory)
+                created_insights.append({
+                    "content": data["content"],
+                    "importance": data["importance"],
+                    "citations": data["citations"],
+                    "question": data["question"],
+                })
+            else:  # procedure
+                data = pending_procedures[type_idx]
+                memory = Memory(
+                    user_id=user_id,
+                    content=data["_content"],
+                    embedding=embedding,
+                    memory_type=MemoryType.PROCEDURAL,
+                    observation_type=ObservationType.INSIGHT,
+                    importance_score=data["importance"],
+                    is_synthetic=True,
+                    citations=data["citations"],
+                )
+                session.add(memory)
+                created_procedures.append({
+                    "title": data["title"],
+                    "steps": data["steps"],
+                    "importance": data["importance"],
+                    "citations": data["citations"],
+                    "question": data["question"],
                 })
 
         # Reset reflection state

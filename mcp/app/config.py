@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:birdseye@localhost:5442/engram"
+    engram_db_pool_size: int = 10
+    engram_db_max_overflow: int = 20
 
     # Embedding
     openai_api_key: str = ""

@@ -13,8 +13,8 @@ engine = create_async_engine(
     settings.database_url,
     echo=False,
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=settings.engram_db_pool_size,
+    max_overflow=settings.engram_db_max_overflow,
 )
 
 # Session factory

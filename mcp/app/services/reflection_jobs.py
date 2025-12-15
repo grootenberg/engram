@@ -1,7 +1,7 @@
 """Background job management for reflection."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -184,7 +184,7 @@ class ReflectionJobService:
 
             # Mark running
             job.status = ReflectionJobStatus.RUNNING
-            job.started_at = datetime.utcnow()
+            job.started_at = datetime.now(timezone.utc)
             await session.flush()
 
             # Run reflection
@@ -201,11 +201,11 @@ class ReflectionJobService:
                 job.procedures_created = result.get("procedures_created")
                 job.memories_analyzed = result.get("memories_analyzed")
                 job.status = ReflectionJobStatus.COMPLETED
-                job.completed_at = datetime.utcnow()
+                job.completed_at = datetime.now(timezone.utc)
                 job.error_message = None
             except Exception as exc:  # noqa: BLE001
                 job.status = ReflectionJobStatus.FAILED
-                job.completed_at = datetime.utcnow()
+                job.completed_at = datetime.now(timezone.utc)
                 job.error_message = str(exc)
 
             await session.flush()

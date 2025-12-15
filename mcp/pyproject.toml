@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "psycopg2-binary>=2.9.0",
     "greenlet>=3.3.0",
+    "mcp-hot-reload",
 ]
 
 [project.optional-dependencies]
@@ -47,3 +48,6 @@ filterwarnings = [
 [tool.coverage.run]
 source = ["app"]
 omit = ["app/db/migrations/*"]
+
+[tool.uv.sources]
+mcp-hot-reload = { git = "https://github.com/data-goblin/claude-code-mcp-reload.git" }
