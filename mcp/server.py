@@ -40,6 +40,98 @@ async def health_check(request: Request) -> PlainTextResponse:
     return PlainTextResponse("OK")
 
 
+# Internal API endpoints for hook scripts (unauthenticated, localhost only)
+# These bypass OAuth for local automation while MCP tools require auth
+
+from starlette.responses import JSONResponse
+
+
+def _check_localhost(request: Request) -> bool:
+    """Verify request is from localhost."""
+    client_host = request.client.host if request.client else None
+    return client_host in ("127.0.0.1", "localhost", "::1")
+
+
+@mcp.custom_route("/internal/observe", methods=["POST"])
+async def internal_observe(request: Request) -> JSONResponse:
+    """Internal endpoint for hook scripts to store observations."""
+    if not _check_localhost(request):
+        return JSONResponse({"error": "Forbidden: localhost only"}, status_code=403)
+
+    try:
+        data = await request.json()
+        result = await memory_observe(
+            content=data.get("content", ""),
+            user_id=data.get("user_id", "default"),
+            observation_type=data.get("observation_type", "general"),
+            importance=data.get("importance"),
+            section=data.get("section"),
+            metadata=data.get("metadata"),
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+def _convert_decimals(obj):
+    """Recursively convert Decimal values to floats for JSON serialization."""
+    from decimal import Decimal
+    if isinstance(obj, dict):
+        return {k: _convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_decimals(v) for v in obj]
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    return obj
+
+
+@mcp.custom_route("/internal/retrieve", methods=["POST"])
+async def internal_retrieve(request: Request) -> JSONResponse:
+    """Internal endpoint for hook scripts to retrieve memories."""
+    if not _check_localhost(request):
+        return JSONResponse({"error": "Forbidden: localhost only"}, status_code=403)
+
+    try:
+        data = await request.json()
+        result = await memory_retrieve(
+            query=data.get("query", ""),
+            user_id=data.get("user_id", "default"),
+            limit=data.get("limit", 10),
+            memory_types=data.get("memory_types"),
+            min_importance=data.get("min_importance", 0.0),
+            include_synthetic=data.get("include_synthetic", True),
+            recency_weight=data.get("recency_weight", 0.33),
+            importance_weight=data.get("importance_weight", 0.33),
+            relevance_weight=data.get("relevance_weight", 0.33),
+            observation_types=data.get("observation_types"),
+            sections=data.get("sections"),
+            created_after=data.get("created_after"),
+            created_before=data.get("created_before"),
+            min_helpful_count=data.get("min_helpful_count", 0),
+            max_harmful_count=data.get("max_harmful_count"),
+        )
+        return JSONResponse(_convert_decimals(result))
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@mcp.custom_route("/internal/stats", methods=["POST"])
+async def internal_stats(request: Request) -> JSONResponse:
+    """Internal endpoint for hook scripts to get stats."""
+    if not _check_localhost(request):
+        return JSONResponse({"error": "Forbidden: localhost only"}, status_code=403)
+
+    try:
+        data = await request.json()
+        result = await memory_stats(
+            user_id=data.get("user_id", "default"),
+            scope=data.get("scope", "summary"),
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 # Register MCP tools
 @mcp.tool()
 async def observe(
